@@ -36,6 +36,10 @@ add_library(
   PMurHash.c
   sanmayce.cpp  
   xxhash.c
+  falkhash.c
+  xxhash256.c
+  crc32_hw.c
+  fletcher.c
 )
 
 add_executable(

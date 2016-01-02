@@ -48,11 +48,18 @@ HashInfo g_hashes[] =
   { DoNothingHash,       128, 0x00000000, "donothing128", "Do-Nothing function (only valid for measuring call overhead)" },
 
   { crc32,                32, 0x3719DB20, "crc32",       "CRC-32" },
+  { crc32c_hw_test,       32, 0x0C7346F0, "crc32_hw",    "SSE4.2 crc32 in HW" },
+  { crc64c_hw_test,       64, 0xE7C3FD0E, "crc64_hw",    "SSE4.2 crc64 in HW" },
+  { fletcher32_test,      32, 0x10281F00, "fletcher32",  "Fletcher 32" },
+  //{ fletcher32_4_test,    32, 0x3719DB20, "fletcher32-4","Fletcher 32-4" },
 
   { md5_32,               32, 0xC10C356B, "md5_32a",     "MD5, first 32 bits of result" },
   { sha1_32a,             32, 0xF9376EA7, "sha1_32a",    "SHA1, first 32 bits of result" },
 
   { FNV,                  32, 0xE3CBBE91, "FNV",         "Fowler-Noll-Vo hash, 32-bit" },
+  { FNV32a,               32, 0xE3CBBE91, "FNV32",       "Fowler-Noll-Vo hash, 32-bit" },
+  { FNV64a,               64, 0x103455FC, "FNV64",       "Fowler-Noll-Vo hash, 64-bit" },
+  { sdbm,                 32, 0x582AF769, "sdbm",        "sdbm as in perl5" },
   { Bernstein,            32, 0xBDB4B640, "bernstein",   "Bernstein, 32-bit" },
   { lookup3_test,         32, 0x3D83917A, "lookup3",     "Bob Jenkins' lookup3" },
   { SuperFastHash,        32, 0x980ACD1D, "superfast",   "Paul Hsieh's SuperFastHash" },
@@ -83,18 +90,24 @@ HashInfo g_hashes[] =
   
   { xxhash32_test, 32, 0xBA88B743, "XX32",    "xxhash for x86, 32-bit" },
   { xxhash64_test, 64, 0x024B7CF4, "XX64",    "xxhash for x86_64, 64-bit" },
+  //FIXME: { xxhash256_test, 64, 0x024B7CF4, "XX256",  "xx256 for x64_64, 64-bit"},
 
   // Sanmayce hashes
-  { FNV1A_penumbra,                  32, 0x55FA4610, "FNV1A_penumbra",          "FNV1A_penumbra, 32-bit" },
-  { FNV1A_Hash_Yoshimura_test,       32, 0x6AC84C08, "FNV1A_Hash_Yoshimura",    "FNV1A_Hash_Yoshimura, 32-bit" },
+  { FNV1A_penumbra,                  32, 0x984510EA, "FNV1A_penumbra",          "FNV1A_penumbra, 32-bit" },
+  { FNV1A_Hash_Yoshimura_test,       32, 0x6D7ECF52, "FNV1A_Hash_Yoshimura",    "FNV1A_Hash_Yoshimura, 32-bit" },
   { FNV1A_Hash_Yoshimitsu_test,      32, 0x2F60F6EE, "FNV1A_Hash_Yoshimitsu",   "FNV1A_Hash_Yoshimitsu, 32-bit" },
   { FNV1A_Hash_Jesteress_test,       32, 0xBF94DE46, "FNV1A_Hash_Jesteress",    "FNV1A_Hash_Jesteress, 32-bit" },
   { FNV1A_Hash_Meiyan_test,          32, 0xF5F4E22C, "FNV1A_Hash_Meiyan",       "FNV1A_Hash_Meiyan, 32-bit" },
   { FNV1A_Hash_Mantis_test,          32, 0x7A4092CE, "FNV1A_Hash_Mantis",       "FNV1A_Hash_Mantis, 32-bit" },
   { FNV1A_Hash_Yorikke_test,         32, 0x1CF81621, "FNV1A_Hash_Yorikke",      "FNV1A_Hash_Yorikke, 32-bit" },
+  { FNV32a_YoshimitsuTRIAD,          32, 0xD8AFFD71, "FNV32a_YoshimitsuTRIAD",  "FNV32a_YoshimitsuTRIAD 32-bit" },
 
   // memhash assambler
   { memhash32_test,       64, 0x999C3C1D, "memhash32",    "memhash for x86, 64-bit" },
+
+  // Only works if we have AES instruction set
+  //FIXME: { falkhash_test,       64, 0x999C3C1D, "falkhash",    "falkhash, 64-bit" },
+  
 
 //  { PMurHash32_test,      32, 0xB0F57EE3, "PMurHash32",  "Shane Day's portable-ized MurmurHash3 for x86, 32-bit." },
 };
@@ -587,7 +600,7 @@ int main ( int argc, char ** argv )
 
   //g_testAll = true;
 
-  //g_testSanity = true;
+  g_testSanity = true;
   g_testSpeed = true;
   //g_testAvalanche = true;
   //g_testBIC = true;

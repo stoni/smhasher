@@ -98,3 +98,24 @@ void crc32 ( const void * key, int len, uint32_t seed, void * out )
 
   *(uint32_t*)out = crc;
 }
+
+void crc32_hw ( const void * key, int len, uint32_t seed, void * out )
+{
+  uint8_t * buf = (uint8_t*)key;
+  uint32_t crc = seed ^ 0xffffffffL;
+
+  while (len >= 8)
+  {
+    DO8(buf);
+    len -= 8;
+  }
+
+  while(len--)
+  {
+    DO1(buf);
+  } 
+
+  crc ^= 0xffffffffL;
+
+  *(uint32_t*)out = crc;
+}

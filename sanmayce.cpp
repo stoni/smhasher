@@ -1,5 +1,51 @@
 #include "Platform.h"
 
+void
+FNV32a_YoshimitsuTRIAD(const void *key, int len, uint32_t seed, void *out)
+{
+  const uint8_t  *p = (const uint8_t *)key;
+  const uint32_t  PRIME = 709607;
+  uint32_t	  hash32A = seed ^ 2166136261;
+  uint32_t	  hash32B = 2166136261 + len;
+  uint32_t	  hash32C = 2166136261;
+
+  for (; len >= 3 * 2 * sizeof(uint32_t); len -= 3 * 2 * sizeof(uint32_t), p += 3 * 2 * sizeof(uint32_t)) {
+    hash32A = (hash32A ^ (ROTL32(*(uint32_t *) (p + 0), 5)  ^ *(uint32_t *) (p + 4)))  * PRIME;
+    hash32B = (hash32B ^ (ROTL32(*(uint32_t *) (p + 8), 5)  ^ *(uint32_t *) (p + 12))) * PRIME;
+    hash32C = (hash32C ^ (ROTL32(*(uint32_t *) (p + 16), 5) ^ *(uint32_t *) (p + 20))) * PRIME;
+  }
+  if (p != key) {
+    hash32A = (hash32A ^ ROTL32(hash32C, 5)) * PRIME;
+  }
+  //Cases 0. .31
+  if (len & 4 * sizeof(uint32_t)) {
+    hash32A = (hash32A ^ (ROTL32(*(uint32_t *) (p + 0), 5) ^ *(uint32_t *) (p + 4))) * PRIME;
+    hash32B = (hash32B ^ (ROTL32(*(uint32_t *) (p + 8), 5) ^ *(uint32_t *) (p + 12))) * PRIME;
+    p += 8 * sizeof(uint16_t);
+  }
+  //Cases 0. .15
+  if (len & 2 * sizeof(uint32_t)) {
+    hash32A = (hash32A ^ *(uint32_t *) (p + 0)) * PRIME;
+    hash32B = (hash32B ^ *(uint32_t *) (p + 4)) * PRIME;
+    p += 4 * sizeof(uint16_t);
+  }
+  //Cases:0. .7
+  if (len & sizeof(uint32_t)) {
+    hash32A = (hash32A ^ *(uint16_t *) (p + 0)) * PRIME;
+    hash32B = (hash32B ^ *(uint16_t *) (p + 2)) * PRIME;
+    p += 2 * sizeof(uint16_t);
+  }
+  //Cases:0. .3
+  if (len & sizeof(uint16_t)) {
+    hash32A = (hash32A ^ *(uint16_t *) p) * PRIME;
+    p += sizeof(uint16_t);
+  }
+  if (len & 1)
+    hash32A = (hash32A ^ *p) * PRIME;
+
+  hash32A = (hash32A ^ ROTL32(hash32B, 5)) * PRIME;
+  *(uint32_t *) out = hash32A ^ (hash32A >> 16);
+}
 
 // FNV1A_YoshimitsuTRIADiiXMMx2 (revision 2 of FNV1A_YoshimitsuTRIADiiXMM, just unrolled once) aka FNV1A_penumbra, copyleft 2013-Jun-15 Kaze.
 // PENUMBRA: Any partial shade or shadow round a thing; a surrounding area of uncertain extent (lit. & fig.). [mod. Latin, from Latin paene almost + umbra shadow.] 
@@ -36,14 +82,14 @@
 //#define XMM_KAZE_SSE4
 void FNV1A_penumbra(const void * key, int len, uint32_t seed, void *out)
 {
-    const uint32_t PRIME = 709607;
-    uint32_t hash32 = seed+2166136261;
-    uint32_t hash32B = seed+2166136261;
-    uint32_t hash32C = seed+2166136261;
-    const char *p = (const char*)key;
+    const uint8_t  *p = (const uint8_t *)key;
+    const uint32_t  PRIME = 709607;
+    uint32_t hash32 = seed ^ 2166136261;
+    uint32_t hash32B = 2166136261 + len;
+    uint32_t hash32C = 2166136261;
     uint32_t Loop_Counter;
     uint32_t Second_Line_Offset;
-    uint32_t h[4];
+    //uint32_t h[4];
 
 #if defined(XMM_KAZE_SSE2) || defined(XMM_KAZE_SSE4) || defined(XMM_KAZE_AVX)
     __m128i xmm0;   // Defined for clarity: No need of defining it, the compiler sees well and uses no intermediate.
@@ -105,15 +151,15 @@ if (len >= 2*4*24) { // Actually 2*4*24 is the minimum and not useful, 200++ mak
 	hash32xmm = _mm_mullo_epi32(_mm_xor_si128(hash32xmm , hash32Bxmm) , PRIMExmm);       
  	hash32xmm = _mm_mullo_epi32(_mm_xor_si128(hash32xmm , hash32Cxmm) , PRIMExmm);       
 #endif
-        _mm_storeu_si128((__m128i *)h, hash32xmm);
+        /*_mm_storeu_si128((__m128i *)h, hash32xmm);
         hash32 = (hash32 ^ h[0]) * PRIME;
         hash32B = (hash32B ^ h[3]) * PRIME;
         hash32 = (hash32 ^ h[1]) * PRIME;
-        hash32B = (hash32B ^ h[2]) * PRIME;
-        /*hash32 = (hash32 ^ hash32xmm.m128i_u32[0]) * PRIME;
+        hash32B = (hash32B ^ h[2]) * PRIME;*/
+        hash32 = (hash32 ^ hash32xmm.m128i_u32[0]) * PRIME;
 	hash32B = (hash32B ^ hash32xmm.m128i_u32[3]) * PRIME;
 	hash32 = (hash32 ^ hash32xmm.m128i_u32[1]) * PRIME;
-	hash32B = (hash32B ^ hash32xmm.m128i_u32[2]) * PRIME;*/
+	hash32B = (hash32B ^ hash32xmm.m128i_u32[2]) * PRIME;
 } else if (len >= 24)
 #else
 if (len >= 24)
@@ -315,8 +361,8 @@ if (wrdlen >= 24)
 uint32_t FNV1A_Hash_Yoshimura(const char *str, uint32_t wrdlen, uint32_t seed)
 {
     const uint32_t PRIME = 709607;
-    uint32_t hash32 = 2166136261+seed;
-    uint32_t hash32B = 2166136261+seed;
+    uint32_t hash32 = seed ^ 2166136261;
+    uint32_t hash32B = 2166136261 + wrdlen;
     const char *p = str;
     uint32_t Loop_Counter;
     uint32_t Second_Line_Offset;
